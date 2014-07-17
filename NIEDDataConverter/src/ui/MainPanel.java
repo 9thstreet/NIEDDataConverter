@@ -146,7 +146,6 @@ public class MainPanel extends JPanel implements ActionListener{
 			OpenFile(file);
 		}
 		if(e.getSource() == buttons[1]){
-			initialize();
 			filechooser = new JFileChooser();
 			int selected = filechooser.showSaveDialog(this);
 		    if (selected == JFileChooser.APPROVE_OPTION){
@@ -168,7 +167,6 @@ public class MainPanel extends JPanel implements ActionListener{
 					e1.printStackTrace();
 				}
 				
-		      label.setText(file.getName());
 		    }
 		}
 		if(e.getSource() == buttons[2]){
