@@ -1,5 +1,7 @@
 package ui;
 
+import io.DataReader;
+
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,6 +19,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class MainPanel extends JPanel implements ActionListener{
 	File file;
@@ -25,20 +28,30 @@ public class MainPanel extends JPanel implements ActionListener{
 	JButton[] buttons;
 	BufferedWriter bw;
 	ArrayList<String> str;
+	ArrayList<String> st2;
 	ArrayList<Integer> data;
 	BufferedReader br;
 	GraphPanel gp;
-	JLabel label;
-	String readedLine,datastr;
-	int beginIndex,lastIndex;
-	
+	DataReader reader;
+	JLabel label,pos,date,distance;
+	String readedLine,datastr,datast2;
+	String[][] pointData;
+	double phie,lambdae,phis,lambdas,disdeg;
+	int beginIndex,lastIndex,posnum;
+	JTextField phieField,lambdaeField;
 	
 	public MainPanel(){
 		beginIndex = 0;
 		datastr = "";
+		datast2 = "";
+		reader = new DataReader();
+		pointData = reader.readTabbedTextData("resource/pointData.txt");
 		outputFile = new File("new file");
 		data = new ArrayList<Integer>();
 		str = new ArrayList<String>();
+		st2 = new ArrayList<String>();
+		phieField = new JTextField("震源の緯度");
+		lambdaeField = new JTextField("震源の経度");
 		filechooser = new JFileChooser();
 		setPreferredSize(new Dimension(800,600));
 		buttons = new JButton[10];
@@ -47,21 +60,28 @@ public class MainPanel extends JPanel implements ActionListener{
 			
 		}
 		label = new JLabel("Select File to Open");
+		pos = new JLabel();
+		date = new JLabel();
+		distance = new JLabel();
 		buttons[0].setText("Open File");
 		buttons[1].setText("Save");
 		buttons[2].setText("Open 続き");
-		add(label);add(buttons[0]);add(buttons[1]);add(buttons[2]);
+		buttons[3].setText("距離計算");
+		add(label);add(pos);add(date);add(buttons[0]);add(buttons[1]);add(buttons[2]);add(phieField);add(lambdaeField);add(buttons[3]);add(distance);
 		gp = new GraphPanel(this);
 		add(gp);
 		buttons[0].addActionListener(this);
 		buttons[1].addActionListener(this);
 		buttons[2].addActionListener(this);
+		buttons[3].addActionListener(this);
 	}
 	
 	public void initialize(){
+		st2.clear();
 		data.clear();
 		str.clear();
 		datastr = "";
+		datast2 = "";
 		beginIndex = 0;
 	}
 	public ArrayList<Integer> getData(){
@@ -93,7 +113,32 @@ public class MainPanel extends JPanel implements ActionListener{
 	      for(int i = 0;i<str.size()-1;i++){
 
 	    	  if(str.get(i).codePointAt(4) != 32){
-	    		  continue;
+	    		  for(int j=0;j<str.get(i).length();j++){
+	    			  if(str.get(i).codePointAt(j) == 32||j == str.get(i).length()-1){
+	    				  if(beginIndex != 0){
+	    					  lastIndex = (j == str.get(i).length()-1) ? j+1 : j;
+	    					  if(lastIndex == beginIndex)beginIndex -= 1;
+	    					  datast2 = str.get(i).substring(beginIndex,lastIndex);
+	    					  beginIndex = 0;
+	    					  st2.add(datast2);
+	    					  datast2 = "";
+	    				  }
+	    				  else if(str.get(i).length()-1 == j){
+	    					  lastIndex = j+1;
+	    					  beginIndex = j;
+	    					  if(lastIndex == beginIndex)beginIndex -= 1;
+	    					  datastr = str.get(i).substring(beginIndex,lastIndex);
+	    					  beginIndex = 0;
+	    					  st2.add(datast2);
+	    					  datast2 = "";
+	    				  }
+	    			  }
+	    			  else{
+	    				  if(beginIndex == 0){
+	    					  beginIndex = j;
+	    				  }
+	    			  }
+	    		  }
 	    	  }
 	    	  else{
 	    		  for(int j = 0;j<str.get(i).length();j++){
@@ -135,7 +180,15 @@ public class MainPanel extends JPanel implements ActionListener{
 //	      }
 //	      System.out.println(data.size());
 	      gp.notifyDataChange();
-	    }
+	      for(int i = 0;i<pointData.length;i++){
+	    	  if(pointData[i][1].equals(st2.get(1))){
+	    	      pos.setText("観測点:"+pointData[i][0]);
+	    	      posnum = i;
+	    	      break;
+	    	  }
+	      }
+	      date.setText("日時"+st2.get(4)+"年の"+st2.get(5)+"日目"+st2.get(6)+"時"+st2.get(7)+"分(UTC)");
+	      }
 	}
 	
 	@Override
@@ -171,9 +224,26 @@ public class MainPanel extends JPanel implements ActionListener{
 		}
 		if(e.getSource() == buttons[2]){
 			str.clear();
+			st2.clear();
+			datast2 = "";
 			datastr = "";
 			beginIndex = 0;
 			OpenFile(file);
+		}
+		if(e.getSource() == buttons[3]){
+			if(st2 == null){
+				distance.setText("データを読み込んで下さい");
+			}
+			else{
+				phie = phie * Math.PI /180;
+				lambdae = lambdae *Math.PI/180;
+				phis = Double.parseDouble(pointData[posnum][2]);
+				lambdas = Double.parseDouble(pointData[posnum][3]);
+				phis = phis * Math.PI/180;
+				lambdas =lambdas *Math.PI/180;
+				disdeg = Math.acos(Math.cos(phie)*Math.cos(phis)*Math.cos(lambdae-lambdas)+Math.sin(phie)*Math.sin(phis))/Math.PI * 180;
+				distance.setText("距離(deg) "+disdeg);
+			}
 		}
 	}
 	public static void main(String[] args){
