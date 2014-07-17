@@ -33,7 +33,7 @@ public class MainPanel extends JPanel implements ActionListener{
 	BufferedReader br;
 	GraphPanel gp;
 	DataReader reader;
-	JLabel label,pos,date,distance;
+	JLabel label,pos,date,distance,label2;
 	String readedLine,datastr,datast2;
 	String[][] pointData;
 	double phie,lambdae,phis,lambdas,disdeg;
@@ -50,8 +50,8 @@ public class MainPanel extends JPanel implements ActionListener{
 		data = new ArrayList<Integer>();
 		str = new ArrayList<String>();
 		st2 = new ArrayList<String>();
-		phieField = new JTextField("震源の緯度");
-		lambdaeField = new JTextField("震源の経度");
+		phieField = new JTextField("震央の緯度");
+		lambdaeField = new JTextField("震央の経度");
 		filechooser = new JFileChooser();
 		setPreferredSize(new Dimension(800,600));
 		buttons = new JButton[10];
@@ -63,11 +63,13 @@ public class MainPanel extends JPanel implements ActionListener{
 		pos = new JLabel();
 		date = new JLabel();
 		distance = new JLabel();
+		label2 = new JLabel("震央距離計算");
 		buttons[0].setText("Open File");
 		buttons[1].setText("Save");
 		buttons[2].setText("Open 続き");
+		buttons[2].setVisible(false);
 		buttons[3].setText("距離計算");
-		add(label);add(pos);add(date);add(buttons[0]);add(buttons[1]);add(buttons[2]);add(phieField);add(lambdaeField);add(buttons[3]);add(distance);
+		add(label);add(pos);add(date);add(buttons[0]);add(buttons[1]);add(buttons[2]);add(label2);add(phieField);add(lambdaeField);add(buttons[3]);add(distance);
 		gp = new GraphPanel(this);
 		add(gp);
 		buttons[0].addActionListener(this);
@@ -197,6 +199,7 @@ public class MainPanel extends JPanel implements ActionListener{
 		if(e.getSource() == buttons[0]){
 			initialize();
 			OpenFile(file);
+			buttons[2].setVisible(true);
 		}
 		if(e.getSource() == buttons[1]){
 			filechooser = new JFileChooser();
@@ -231,10 +234,12 @@ public class MainPanel extends JPanel implements ActionListener{
 			OpenFile(file);
 		}
 		if(e.getSource() == buttons[3]){
-			if(st2 == null){
+			if(data.isEmpty()){
 				distance.setText("データを読み込んで下さい");
 			}
 			else{
+				phie = Double.parseDouble(phieField.getText());
+				lambdae = Double.parseDouble(lambdaeField.getText());
 				phie = phie * Math.PI /180;
 				lambdae = lambdae *Math.PI/180;
 				phis = Double.parseDouble(pointData[posnum][2]);
