@@ -29,47 +29,33 @@ import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
 
 public class MainPanel extends JPanel implements ActionListener {
-	File file;
-	File outputFile;
-	JFileChooser filechooser;
-	JButton[] buttons;
-	BufferedWriter bw;
-	ArrayList<String> str;
-	ArrayList<String> st2;
-	ArrayList<String> namelist;
-	ArrayList<Integer> data;
-	ArrayList<Double> disdegs;
-	ArrayList<ArrayList<Integer>> eqdata;
-	BufferedReader br;
-	GraphPanel gp;
-	DataReader reader;
-	JLabel label, pos, date, label2, label3;
-	String readedLine, datastr, datast2;
-	boolean isEQDataInputted;
-	String[][] pointData;
-	String[] datalist;
-	double phie, lambdae, phis, lambdas, disdeg;
-	int beginIndex, lastIndex, posnum, maxvalue, minvalue;
-	JTextField phieField, lambdaeField;
-	ArrayList<Integer> maxvalues;
-	ArrayList<Integer> minvalues;
-	final int dx = 100;
-	
+	private File file;
+	private JFileChooser filechooser;
+	private JButton[] buttons;
+	private BufferedWriter bw;
+	private ArrayList<String> str;
+	private ArrayList<String> st2;
+	private ArrayList<WaveData> wavedata;
+	private BufferedReader br;
+	private GraphPanel gp;
+	private DataReader reader;
+	private JLabel label, pos, date, label2;
+	private String readedLine, datastr, datast2;
+	private boolean isEQDataInputted;
+	private String[][] pointData;
+	private String[] datalist;
+	private double phie, lambdae, phis, lambdas;
+	private int beginIndex, lastIndex, posnum,happenedTime;
+	private JTextField phieField, lambdaeField;
 	public MainPanel() {
 		beginIndex = 0;
 		datastr = "";
 		datast2 = "";
 		reader = new DataReader();
 		pointData = reader.readTabbedTextData("resource/pointData.txt");
-		outputFile = new File("new file");
-		data = new ArrayList<Integer>();
 		str = new ArrayList<String>();
 		st2 = new ArrayList<String>();
-		disdegs = new ArrayList<Double>();
-		namelist = new ArrayList<String>();
-		maxvalues = new ArrayList<Integer>();
-		minvalues = new ArrayList<Integer>();
-		eqdata = new ArrayList<ArrayList<Integer>>();
+		wavedata = new ArrayList<WaveData>();
 		phieField = new JTextField("震央の緯度");
 		lambdaeField = new JTextField("震央の経度");
 		filechooser = new JFileChooser();
@@ -77,7 +63,6 @@ public class MainPanel extends JPanel implements ActionListener {
 		buttons = new JButton[10];
 		for (int i = 0; i < buttons.length; i++) {
 			buttons[i] = new JButton();
-
 		}
 		label = new JLabel("Select File to Open");
 		pos = new JLabel();
@@ -112,22 +97,21 @@ public class MainPanel extends JPanel implements ActionListener {
 		buttons[4].addActionListener(this);
 		buttons[5].addActionListener(this);
 	}
-
-	public void initialize() {
-		st2.clear();
-		data.clear();
+	public ArrayList<WaveData> getWaveData(){
+		return wavedata;
+	}
+	public void processDataFile(File file,boolean isContinue){
 		str.clear();
-		datastr = "";
+		st2.clear();
 		datast2 = "";
+		datastr = "";
 		beginIndex = 0;
-	}
-
-	public ArrayList<Integer> getData() {
-		return data;
-	}
-
-	public void processDataFile(File file){
-		label.setText("データ読み込み数 " + eqdata.size());
+		int lastindex = wavedata.size()-1;
+		if(!isContinue){
+			wavedata.add(new WaveData());
+			lastindex += 1;
+		}
+		label.setText("データ読み込み数 " + wavedata.size());
 		try {
 			br = new BufferedReader(new FileReader(file));
 		} catch (FileNotFoundException e1) {
@@ -188,7 +172,7 @@ public class MainPanel extends JPanel implements ActionListener {
 							//System.out.println(beginIndex);
 							datastr = str.get(i).substring(beginIndex, lastIndex);
 							beginIndex = 0;
-							data.add(Integer.parseInt(datastr));
+							wavedata.get(lastindex).addData(Integer.parseInt(datastr));
 							//System.out.println(datastr);
 							datastr = "";
 						}
@@ -200,7 +184,7 @@ public class MainPanel extends JPanel implements ActionListener {
 							//System.out.println(beginIndex);
 							datastr = str.get(i).substring(beginIndex, lastIndex);
 							beginIndex = 0;
-							data.add(Integer.parseInt(datastr));
+							wavedata.get(lastindex).addData(Integer.parseInt(datastr));
 							//System.out.println(datastr);
 							datastr = "";
 						}
@@ -222,96 +206,67 @@ public class MainPanel extends JPanel implements ActionListener {
 		for (int i = 0; i < pointData.length; i++) {
 			if (pointData[i][1].equals(st2.get(1))) {
 				pos.setText("観測点:" + pointData[i][0]);
+				wavedata.get(lastindex).setPosID(st2.get(1));
+				wavedata.get(lastindex).setPosition(pointData[i][0]);
 				posnum = i;
 				break;
 			}
 		}
-		date.setText("日時" + st2.get(4) + "年の" + st2.get(5) + "日目" + st2.get(6) + "時" + st2.get(7) + "分(UTC)");
+		if(!isContinue){
+			wavedata.get(lastindex).happenedTime= happenedTime;
+			date.setText("日時" + st2.get(4) + "年の" + st2.get(5) + "日目" + st2.get(6) + "時" + st2.get(7) + "分(UTC)");
+			wavedata.get(lastindex).setDate(Integer.parseInt(st2.get(4)), Integer.parseInt(st2.get(5)), Integer.parseInt(st2.get(6)), Integer.parseInt(st2.get(7)), Integer.parseInt(st2.get(8)));
+		}
 		if (isEQDataInputted) {
 			phis = Double.parseDouble(pointData[posnum][2]);
 			lambdas = Double.parseDouble(pointData[posnum][3]);
 			phis = phis * Math.PI / 180;
 			lambdas = lambdas * Math.PI / 180;
-			disdeg = Math.acos(Math.cos(phie) * Math.cos(phis) * Math.cos(lambdae - lambdas) + Math.sin(phie)
+			wavedata.get(lastindex).setDisDeg(Math.acos(Math.cos(phie) * Math.cos(phis) * Math.cos(lambdae - lambdas) + Math.sin(phie)
 					* Math.sin(phis))
-					/ Math.PI * 180;
-		}
-		maxvalue = 0;
-		minvalue = 0;
-		for (int k : data) {
-			if (k > maxvalue)
-				maxvalue = k;
-			if (k < minvalue)
-				minvalue = k;
+					/ Math.PI * 180);
 		}
 	}
-	public void OpenFile(File file) {
+	public void OpenFile(File file,boolean isCont) {
 		filechooser = new JFileChooser();
 		int selected = filechooser.showOpenDialog(this);
 		if (selected == JFileChooser.APPROVE_OPTION) {
 			file = filechooser.getSelectedFile();
 			if (!file.getName().equals("filelist.txt")) {
-				processDataFile(file);
+				processDataFile(file,isCont);
 			}
 			else{
 				datalist = reader.readTextData(file);
 				label2.setText("登録しました");
 				phie = Double.parseDouble(datalist[0]);
 				lambdae = Double.parseDouble(datalist[1]);
+				happenedTime = Integer.parseInt(datalist[2]);
 				phie = phie * Math.PI / 180;
 				lambdae = lambdae * Math.PI / 180;
 				isEQDataInputted = true;
 				phieField.setVisible(false);
 				lambdaeField.setVisible(false);
 				buttons[3].setText("登録取り消し");
-				for(int i = 2;i<datalist.length;i++){
-					if(!datalist[i].equals("EOP")){
-						str.clear();
-						st2.clear();
-						datast2 = "";
-						datastr = "";
-						beginIndex = 0;
-						processDataFile(new File(file.getParent()+"\\"+datalist[i]));
+				boolean isContinue = false;
+				for(int i = 3;i<datalist.length;i++){
+					if(datalist[i].equals("EOP")){
+						isContinue = false;
 					}
 					else{
-						disdegs.add(disdeg);
-						namelist.add(st2.get(1));
-						maxvalues.add(maxvalue);
-						minvalues.add(minvalue);
-						eqdata.add(new ArrayList<Integer>(data));
-						buttons[2].setVisible(false);
-						buttons[0].setVisible(true);
-						initialize();
+						processDataFile(new File(file.getParent()+"\\"+datalist[i]),isContinue);
+						isContinue = true;
 					}
 				}
 			}
 		}
 		gp.repaint();
 	}
-
-	public int getMaxvalue() {
-		return maxvalue;
-	}
-
-	public int getMinvalue() {
-		return minvalue;
-	}
-
-	public ArrayList<Integer> getMaxvalues() {
-		return maxvalues;
-	}
-
-	public ArrayList<Integer> getMinvalues() {
-		return minvalues;
-	}
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		// TODO 自動生成されたメソッド・スタブ
 		if (e.getSource() == buttons[0]) {
-			initialize();
-			OpenFile(file);
-			if (!data.isEmpty()) {
+			OpenFile(file,false);
+			if (!wavedata.isEmpty()) {
 				buttons[0].setVisible(false);
 				buttons[4].setVisible(true);
 				buttons[2].setVisible(true);
@@ -321,52 +276,26 @@ public class MainPanel extends JPanel implements ActionListener {
 			filechooser = new JFileChooser();
 			int selected = filechooser.showSaveDialog(this);
 			if (selected == JFileChooser.APPROVE_OPTION) {
-				if (eqdata.isEmpty()) {
-					try {
-						bw = new BufferedWriter(new FileWriter(filechooser.getSelectedFile() + ".txt"));
-						for (int i = 0; i < data.size(); i++) {
-							bw.write(i + 1 + "\t" + data.get(i));
-							bw.newLine();
-						}
-						if (isEQDataInputted) {
-							bw.write("距離 " + disdeg);
-						}
-						bw.close();
-					} catch (IOException e1) {
-						// TODO 自動生成された catch ブロック
-						e1.printStackTrace();
-					}
-				}
-				else {
 					str.clear();
 					try {
 						bw = new BufferedWriter(new FileWriter(filechooser.getSelectedFile() + ".txt"));
-						for (int i = 0; i < disdegs.size(); i++) {
-							if (i == 0) {
-								str.add("震央距離\t" + disdegs.get(i).toString());
-							}
-							else {
-								str.set(0, str.get(0) + "\t" + disdegs.get(i));
-							}
-						}
-						for (int i = 0; i < namelist.size(); i++) {
-							if (i == 0) {
-								str.add("観測点\t" + namelist.get(i));
-							}
-							else {
-								str.set(1, str.get(1) + "\t" + namelist.get(i));
-							}
-						}
-
-						System.out.println(eqdata.get(0).size());
-						for (int i = 0; i < eqdata.size(); i++) {
-							for (int j = 0; j < eqdata.get(i).size(); j++) {
+						for (int i = 0; i < wavedata.size(); i++) {
+							for (int j = 0; j <	wavedata.get(i).getDataSize(); j++) {
 								if (i == 0) {
-									str.add(j + "\t" + eqdata.get(i).get(j).toString());
+									str.add(j + "\t" + Integer.toString(wavedata.get(i).getData(j)));
 								}
 								else {
-									str.set(j + 2, str.get(j + 2) + "\t" + eqdata.get(i).get(j));
+									str.set(j + 2, str.get(j + 2) + "\t" + Integer.toString(wavedata.get(i).getData(j)));
 								}
+							}
+							if (i == 0) {
+								str.add("震央距離\t" + Double.toString(wavedata.get(i).getDisDeg()));
+								str.add("観測点\t" + wavedata.get(i).getPosition());
+
+							}
+							else {
+								str.set(0, str.get(0) + "\t" + Double.toString(wavedata.get(i).getDisDeg()));
+								str.set(1, str.get(1) + "\t" + wavedata.get(i).getPosition());
 							}
 						}
 						for (String s : str) {
@@ -379,15 +308,9 @@ public class MainPanel extends JPanel implements ActionListener {
 						e1.printStackTrace();
 					}
 				}
-			}
 		}
 		if (e.getSource() == buttons[2]) {
-			str.clear();
-			st2.clear();
-			datast2 = "";
-			datastr = "";
-			beginIndex = 0;
-			OpenFile(file);
+			OpenFile(file,true);
 		}
 		if (e.getSource() == buttons[3]) {
 			if (!isEQDataInputted) {
@@ -407,21 +330,12 @@ public class MainPanel extends JPanel implements ActionListener {
 				lambdaeField.setVisible(true);
 				buttons[3].setText("登録");
 			}
-
 		}
 		if (e.getSource() == buttons[4]) {
-			if (data.isEmpty()) {
+			if (wavedata.isEmpty()) {
 				label.setText("データが読み込まれていません");
 			} else {
-				//				System.out.println(data.size());
-				disdegs.add(disdeg);
-				namelist.add(st2.get(1));
-				maxvalues.add(maxvalue);
-				minvalues.add(minvalue);
-				eqdata.add(new ArrayList<Integer>(data));
-				buttons[2].setVisible(false);
-				buttons[0].setVisible(true);
-				initialize();
+
 			}
 		}
 		if(e.getSource() == buttons[5]){
@@ -430,31 +344,15 @@ public class MainPanel extends JPanel implements ActionListener {
 			int selected = filechooser.showSaveDialog(this);
 			if (selected == JFileChooser.APPROVE_OPTION) {
 			    try {
-			    	
+
 					OutputStream out=new FileOutputStream(filechooser.getSelectedFile());
 					ImageIO.write(gp.makeImage(), "PNG", out);
 				} catch (IOException e1) {
 					// TODO 自動生成された catch ブロック
 					e1.printStackTrace();
 				}
-			}	
+			}
 		}
-	}
-	
-	public ArrayList<ArrayList<Integer>> getEqdata() {
-		return eqdata;
-	}
-
-	public ArrayList<Double> getDisdegs() {
-		return disdegs;
-	}
-
-	public double getDisdeg() {
-		return disdeg;
-	}
-
-	public ArrayList<String> getNamelist() {
-		return namelist;
 	}
 
 	public static void main(String[] args) {
@@ -516,7 +414,7 @@ public class MainPanel extends JPanel implements ActionListener {
 			// TODO 自動生成されたメソッド・スタブ
 			return "PNG 画像ファイル";
 		}
-		
+
 	}
 }
 

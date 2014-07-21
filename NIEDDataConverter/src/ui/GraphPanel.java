@@ -12,86 +12,67 @@ import javax.swing.JPanel;
 public class GraphPanel extends JPanel{
 	MainPanel panel;
 	int width = 600;int height = 400;
-	ArrayList<Integer> data;
-	ArrayList<ArrayList<Integer>> eqdata;
-	ArrayList<Double> disdegs;
-	ArrayList<String> names;
-	ArrayList<Integer> maxvalues;
-	ArrayList<Integer> minvalues;
+	ArrayList<WaveData> data;
 	BufferedImage bufferImage;
 
 	Color[] colors = {Color.red,Color.blue,Color.green,Color.orange};
 	public GraphPanel(MainPanel panel){
 		setPreferredSize(new Dimension(width,height));
 		this.panel = panel;
-		getData();
-	
-	}
-	public void getData(){
-		this.data = panel.getData();
-		this.eqdata = panel.getEqdata();
-		this.names = panel.getNamelist();
-		this.disdegs = panel.getDisdegs();
-		maxvalues = panel.getMaxvalues();
-		minvalues = panel.getMinvalues();
-		
-		
+		data = panel.getWaveData();
 	}
 	public BufferedImage makeImage(){
 
-		int width = 1920;
-		int height = 1080;
-		
+		int width = 2339;
+		int height = 1654;
+
 		bufferImage=new BufferedImage(width,height,BufferedImage.TYPE_INT_BGR);
 		Graphics2D g2=bufferImage.createGraphics();
-		g2.setBackground(Color.WHITE);
-		g2.clearRect(0, 0, width, height);
-		g2.setColor(Color.green);
-		g2.drawLine(0,height-1,width,height-1);
-		g2.setColor(Color.red);
-		int max = (panel.getMaxvalue()-panel.getMinvalue())*10;
-		for(int i = 0;i<data.size()-1;i++){
-			g2.drawLine(i*width/data.size(),-(int)(height*(panel.getDisdeg()/20))+height-data.get(i)*height/max,(i+1)*width/data.size(),-(int)(height*(panel.getDisdeg()/20))+height-data.get(i+1)*height/max);
-		}
-		for(int i = 0;i<eqdata.size();i++){
-			g2.setColor(colors[i%colors.length]);
-			g2.drawString(names.get(i)+" "+((double)Math.round(disdegs.get(i)*100))/100,0,height-(int)(height*(disdegs.get(i)/20)));
-
-			g2.setColor(Color.black);
-			int maxv = (maxvalues.get(i)-minvalues.get(i))*10;
-			for(int k = 0;k<eqdata.get(i).size()-1;k++){
-				g2.drawLine(k*width/eqdata.get(i).size(),-(int)(height*(disdegs.get(i)/20))+height-eqdata.get(i).get(k)*height/maxv,(k+1)*width/eqdata.get(i).size(),-(int)(height*(disdegs.get(i)/20))+height-eqdata.get(i).get(k+1)*height/maxv);
-			}
-
-			
-		}
+		draw(g2,width,height);
 		return bufferImage;
 	}
-	
+
+	private void draw(Graphics2D g2,int width,int height){
+		g2.setBackground(Color.WHITE);
+		g2.clearRect(0, 0, width, height);
+		for(int i= 1;i<101;i++){
+			g2.setColor((i%10 == 0)?Color.cyan :Color.green);
+			g2.drawLine(0,i*(height-20)/100,width,i*(height-20)/100);
+		}
+		for(int i= 1;i<101;i++){
+			g2.setColor((i%10 == 0)?Color.cyan :Color.green);
+			g2.drawLine((width-50)*i/100, 0, (width-50)*i/100, height);
+		}
+		
+		g2.setColor(Color.blue);
+		g2.drawLine(0,height-20,width,height-20);
+		g2.drawLine(width-50, 0, width-50, height);
+		g2.setColor(Color.black);
+		if(!data.isEmpty()){
+			g2.drawString(data.get(0).getDate(),0,height-10);
+			g2.drawString(Integer.toString(data.get(0).getDataSize()/20/2),width/2-45,height-10);
+			g2.drawString(Integer.toString(data.get(0).getDataSize()/20),width-80,height-10);
+			if(data.get(0).getHappenedTime() != 0){
+				g2.setColor(Color.red);
+				g2.drawString("発生時刻 "+data.get(0).getHappenedTime()+"(sec)",20*data.get(0).getHappenedTime()*width/data.get(0).getDataSize(),height);
+				g2.drawLine(20*data.get(0).getHappenedTime()*width/data.get(0).getDataSize(),0,20*data.get(0).getHappenedTime()*width/data.get(0).getDataSize(),height);
+			}
+		}
+		g2.setColor(Color.black);
+		g2.drawString("20",width-50,10);
+		g2.drawString("10",width-50,height/2+5);
+		g2.drawString("距離(deg)",width-50,height-10);
+		g2.drawString("0",width-50,height-20);
+		g2.drawString("t(sec)",width-80,height);
+		for(int i=0;i<data.size();i++){
+			data.get(i).draw(g2,width-50,height-20);
+		}
+	}
 	@Override
 	protected void paintComponent(Graphics g){
 		super.paintComponent(g);
 		Graphics2D g2=(Graphics2D)g;
-		g2.setBackground(Color.WHITE);
-		g2.clearRect(0, 0, width, height);
-		g2.setColor(Color.green);
-		g2.drawLine(0,height-1,width,height-1);
-		g2.setColor(Color.red);
-		int max = (panel.getMaxvalue()-panel.getMinvalue())*10;
-		for(int i = 0;i<data.size()-1;i++){
-			g2.drawLine(i*width/data.size(),-(int)(height*(panel.getDisdeg()/20))+height-data.get(i)*height/max,(i+1)*width/data.size(),-(int)(height*(panel.getDisdeg()/20))+height-data.get(i+1)*height/max);
-		}
-		for(int i = 0;i<eqdata.size();i++){
-			g2.setColor(colors[i%colors.length]);
-			g2.drawString(names.get(i)+" "+((double)Math.round(disdegs.get(i)*100))/100,0,height-(int)(height*(disdegs.get(i)/20)));
-
-			g2.setColor(Color.black);
-			int maxv = (maxvalues.get(i)-minvalues.get(i))*10;
-			for(int k = 0;k<eqdata.get(i).size()-1;k++){
-				g2.drawLine(k*width/eqdata.get(i).size(),-(int)(height*(disdegs.get(i)/20))+height-eqdata.get(i).get(k)*height/maxv,(k+1)*width/eqdata.get(i).size(),-(int)(height*(disdegs.get(i)/20))+height-eqdata.get(i).get(k+1)*height/maxv);
-			}
-			
-		}
+		draw(g2,width,height);
 	}
 
 }
